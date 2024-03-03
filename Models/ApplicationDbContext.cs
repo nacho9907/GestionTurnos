@@ -72,9 +72,9 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Servicio>(entity =>
         {
-            entity.HasKey(e => e.Idservicio).HasName("PK__Servicio__3214EC273049877F");
+            entity.HasKey(e => e.IDServicio).HasName("PK__Servicio__3214EC273049877F");
 
-            entity.Property(e => e.Idservicio)
+            entity.Property(e => e.IDServicio)
                 .ValueGeneratedNever()
                 .HasColumnName("IDServicio");
             entity.Property(e => e.Costo).HasColumnType("decimal(10, 2)");
@@ -104,9 +104,9 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.Idcliente)
                 .HasConstraintName("FK__Turnos__IDClient__3E52440B");
 
-            entity.HasOne(d => d.IdservicioNavigation).WithMany(p => p.Turnos)
-                .HasForeignKey(d => d.Idservicio)
-                .HasConstraintName("FK__Turnos__IDServic__3F466844");
+            //entity.HasOne(d => d.IdservicioNavigation).WithMany(p => p.Turnos)
+            //    .HasForeignKey(d => d.Idservicio)
+            //    .HasConstraintName("FK__Turnos__IDServic__3F466844");
         });
 
         OnModelCreatingPartial(modelBuilder);

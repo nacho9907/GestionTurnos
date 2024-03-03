@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace GestionTurnos.Models;
 
-public partial class Servicio
+public class Servicio
 {
-    public int Idservicio { get; set; }
+    public int IDServicio { get; set; }
 
     public string? Nombre { get; set; }
 
@@ -15,5 +15,7 @@ public partial class Servicio
 
     public decimal? Costo { get; set; }
 
-    public virtual ICollection<Turno> Turnos { get; set; } = new List<Turno>();
+    public bool? Anulado { get; set; }
+
+    //public virtual ICollection<Turno> Turnos { get; set; } = new List<Turno>();
 }

@@ -15,5 +15,7 @@ public partial class Cliente
 
     public string? CorreoElectronico { get; set; }
 
+    public bool? Anulado { get; set; }
+
     public virtual ICollection<Turno> Turnos { get; set; } = new List<Turno>();
 }

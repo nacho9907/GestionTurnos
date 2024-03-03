@@ -1,0 +1,201 @@
+﻿@model List<GestionTurnos.Models.Cliente>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div id="app">
+    <h4>Clientes</h4>
+    <hr />
+    <button v-on:click="AbrirModalNuevoCliente()">+ Agregar Cliente</button>
+    <hr />
+    <table class="table">
+        <thead class="encTabla">
+            <tr>
+                <th scope="col">N° Cliente</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Telefono</th>
+                <th scope="col">Correo</th>
+                <th scope="col">Operaciones</th>
+            </tr>
+        </thead>
+        <tbody class="bodyTabla">
+            @foreach (var cliente in Model)
+            {
+                <tr>
+                    <td>@cliente.Idcliente</td>
+                    <td>@cliente.Nombre</td>
+                    <td>@cliente.Apellido</td>
+                    <td>@cliente.Telefono</td>
+                    <td>@cliente.CorreoElectronico</td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm" v-on:click="AnularCliente('@cliente.Idcliente')">Anular</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Modal para agregar Cliente -->
+    <div class="modal-background" v-if="modalNuevoCliente">
+        <div class="modal-content" v-if="modalNuevoCliente">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Nuevo Cliente</h1>
+                <button type="button" class="btn-close" v-on:click="CerrarModalNuevoCliente()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario nuevo Cliente -->
+                <!-- Grupo nombre -->
+                <div class="mb-3 row">
+                    <label for="Nombre" class="col-sm-2 col-form-label">Nombre</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="Nombre" v-model="nombre" required>
+                    </div>
+                </div>
+                <!-- Grupo Apellido -->
+                <div class="mb-3 row">
+                    <label for="Descripcion" class="col-sm-2 col-form-label">Apellido</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" v-model="apellido">
+                    </div>
+                </div>
+                <!-- Grupo telefono -->
+                <div class="mb-3 row">
+                    <label for="Duracion" class="col-sm-2 col-form-label">Telefono</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control" v-model="telefono">
+                    </div>
+                </div>
+                <!-- Grupo Correo -->
+                <div class="mb-3 row">
+                    <label for="Costo" class="col-sm-2 col-form-label">Correo</label>
+                    <div class="col-sm-6">
+                        <input type="email" class="form-control" v-model="correo" required>
+                    </div>
+                </div>
+                <!-- Cierre de formulario nuevo Cliente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" v-on:click="CerrarModalNuevoCliente()" class="btn btn-outline-secondary btn-sm">Cancelar</button>
+                <button type="button" v-on:click="GuardarModalNuevoCliente()" class="btn btn-outline-success btn-sm">Grabar</button>
+            </div>
+        </div>
+    </div>
+    <!-- Cierra modal nuevo Cliente -->
+</div>
+
+<!-- Referencia al script de Vue -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<!-- Importar axios para realizar las solicitudes al controlador -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    // Inicializar Vue y montar la app en el elemento con el id "app"
+    new Vue({
+        el: '#app',
+        data: {
+            cosas: '',
+            modalNuevoCliente: false,
+            // Datos del formulario de nuevo cliente
+            nombre: '',
+            apellido: '',
+            correo: 'email',
+            telefono: '',
+        },
+        created() {
+        },
+        methods: {
+            // Función para abrir el modal de nuevo cliente
+            AbrirModalNuevoCliente() {
+                this.modalNuevoCliente = true;
+            },
+            CerrarModalNuevoCliente() {
+                this.modalNuevoCliente = false;
+                this.nombre = '';
+                this.apellido = '';
+                this.correo = 'email';
+                this.telefono = '';
+            },
+            GuardarModalNuevoCliente() {
+                // Datos a guardar
+                let cliente = {
+                    Nombre: this.nombre,
+                    Apellido: this.apellido,
+                    Telefono: this.telefono,
+                    CorreoElectronico: this.correo
+                };
+
+                if (this.nombre == '' || this.apellido == '' || this.correo == 'email' || this.telefono == '') {
+                    alert("Debe completar todos los campos");
+                } else {
+                    // Realizar la solicitud HTTP POST al controlador
+                    axios.post('/Clientes/Crear', cliente)
+                        .then(response => {
+                            // Manejar la respuesta de manera adecuada
+                            window.location.reload();
+                            alert("Hecho");
+                            // Cerrar el modal después de guardar los datos
+                            this.modalNuevoServicio = false;
+                        })
+                        .catch(error => {
+                            // Manejar errores
+                            console.error(error);
+                        });
+                }
+            },
+
+            // Función para Anular cliente
+            AnularCliente(Idcliente) {
+                var IDClienteParseado = parseInt(Idcliente);
+
+                fetch('/Clientes/ActualizarClienteComoAnulado', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ Idcliente: IDClienteParseado })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error al anular el cliente');
+                        }
+                    })
+                    .then(data => {
+                        window.location.reload();
+                        alert("Anulado");
+                        // Recargar la página actual
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+
+        },
+    });
+</script>
+<style scoped>
+    .encTabla {
+        background-color: lightcyan;
+    }
+
+    /* Estilos para centrar el modal */
+    .modal-content {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 400px;
+    }
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+</style>

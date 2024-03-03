@@ -1,36 +1,212 @@
-﻿
+﻿@model List<GestionTurnos.Models.Servicio> // Asegúrate de tener el espacio de nombres y el nombre de la clase correctos para tu modelo
+
 @{
     ViewData["Title"] = "Index";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Index</h1>
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">First</th>
-            <th scope="col">Last</th>
-            <th scope="col">Handle</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th scope="row">1</th>
-            <td>Mark</td>
-            <td>Otto</td>
-            
-        </tr>
-        <tr>
-            <th scope="row">2</th>
-            <td>Jacob</td>
-            <td>Thornton</td>
-            
-        </tr>
-        <tr>
-            <th scope="row">3</th>
-            <td colspan="2">Larry the Bird</td>
-            
-        </tr>
-    </tbody>
-</table>
+<div id="app">
+
+
+    <h4>Servicios</h4>
+    <hr />
+    <button v-on:click="AbrirModalNuevoServicio()">+ Agregar Servicio</button>
+    <hr />
+    <table class="table">
+        <thead class="encTabla">
+            <tr>
+                <th scope="col">N° Servicio</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Descripción</th>
+                <th scope="col">Duración estimada (hs)</th>
+                <th scope="col">Costo</th>
+                <th scope="col">Operaciones</th>
+            </tr>
+        </thead>
+        <tbody class="bodyTabla">
+            @foreach (var servicio in Model)
+            {
+                <tr>
+                    <td>@servicio.IDServicio</td>
+                    <td>@servicio.Nombre</td>
+                    <td>@servicio.Descripcion</td>
+                    <td>@servicio.DuracionEstimada</td>
+                    <td>@servicio.Costo</td>
+
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm" v-on:click="AnularServicio('@servicio.IDServicio')">Anular</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @* modal para agregar servicio *@
+    <!-- Div adicional para el fondo borroso -->
+    <div class="modal-background" v-if="modalNuevoServicio">
+        <div class="modal-content" v-if="modalNuevoServicio">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Nuevo Servicio</h1>
+                <button type="button" class="btn-close" v-on:click="CerrarModalNuevoServicio()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @* formulario nuevo Servicio *@
+                @* grupo nombre *@
+                <div class="mb-3 row">
+                    <label for="Nombre" class="col-sm-2 col-form-label">Nombre</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="Nombre" v-model="nombre" required>
+                    </div>
+                </div>
+                @* grupo descripcion *@
+                <div class="mb-3 row">
+                    <label for="Descripcion" class="col-sm-2 col-form-label">Descripcion</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" v-model="descripcion">
+                    </div>
+                </div>
+                @* grupo duracion estimada *@
+                <div class="mb-3 row">
+                    <label for="Duracion" class="col-sm-2 col-form-label">Duracion estimada</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control" v-model="duracionEstimada">
+                    </div>
+                </div>
+                @* grupo costo *@
+                <div class="mb-3 row">
+                    <label for="Costo" class="col-sm-2 col-form-label">Costo</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control" v-model="costo" required>
+                    </div>
+                </div>
+                @* cierre de formulario nuevo Servicio *@
+            </div>
+            <div class="modal-footer">
+                <button type="button" v-on:click="CerrarModalNuevoServicio()" class="btn btn-outline-secondary btn-sm">Cancelar</button>
+                <button type="button" v-on:click="GuardarModalNuevoServicio()" class="btn btn-outline-success btn-sm">Grabar</button>
+            </div>
+        </div>
+    </div>
+    @* cierra modal nuevo Servicio *@
+</div>
+
+<!-- Referencia al script de Vue -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+@* //importar axios para realizar las solicitudes al controlador *@
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    // Inicializar Vue y montar la app en el elemento con el id "app"
+    new Vue({
+        el: '#app',
+        data: {
+            cosas: '',
+            modalNuevoServicio: false,
+            // datos del formulario de nuevo servicio|
+            nombre: '',
+            descripcion: '',
+            duracionEstimada: 0,
+            costo: 0,
+            // **************
+        },
+        created() {
+        },
+        methods: {
+            // funcion para abrir el modal de nuevo servicio
+            AbrirModalNuevoServicio() {
+                this.modalNuevoServicio = true;
+            },
+            CerrarModalNuevoServicio() {
+                this.modalNuevoServicio = false;
+                this.nombre = '';
+                this.descripcion = '';
+                this.duracionEstimada = 0;
+                this.costo = 0;
+            },
+            GuardarModalNuevoServicio() {
+
+                // Datos a guardar
+                let servicio = {
+                    Nombre: this.nombre,
+                    Descripcion: this.descripcion,
+                    DuracionEstimada: this.duracionEstimada,
+                    Costo: this.costo
+                };
+                if (this.nombre == '' || this.descripcion == '' || this.duracionEstimada == 0 || this.costo == 0) {
+                    alert("Debe completar todos los campos");
+                }
+                else {
+                    // Realizar la solicitud HTTP POST al controlador
+                    axios.post('/Servicios/Crear', servicio)
+                        .then(response => {
+                            // Manejar la respuesta de manera adecuada
+                            window.location.reload();
+                            alert("Hecho");
+                            // Cerrar el modal después de guardar los datos
+                            this.modalNuevoServicio = false;
+                        })
+                        .catch(error => {
+                            // Manejar errores
+                            console.error(error);
+                        });
+                }//cierre de else
+            },
+
+            // funcion para AnularServicio
+            AnularServicio(IdServicio) {
+                var IDServicioParseado = parseInt(IdServicio);
+
+                fetch('/Servicios/ActualizarServicioComoAnulado', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ IDServicio: IDServicioParseado })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error al anular el servicio');
+                        }
+                    })
+                    .then(data => {
+                        window.location.reload();
+                        alert("Anulado");
+                        // Recargar la página actual
+
+
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+
+        },
+    });
+</script>
+<style scoped>
+
+    .encTabla {
+        background-color: lightcyan;
+    }
+
+
+    /* Estilos para centrar el modal */
+    .modal-content {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 400px;
+    }
+
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+</style>

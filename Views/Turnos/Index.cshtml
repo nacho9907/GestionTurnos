@@ -1,0 +1,547 @@
+﻿@model List<GestionTurnos.Controllers.TurnosController.TurnoViewModel>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var listaServicios = ViewBag.ListaServicios as List<Servicio>;
+}
+
+<div id="app">
+    <h4>Turnos</h4>
+    <hr />
+    <button v-on:click="AbrirModalNuevoTurno()">+ Agregar Turno</button>
+    <hr />
+    <button class="btn btn-outline-info bnt-sm" v-on:click="VerReferencia()"><em>Refrencias ?</em></button>
+    <br />
+    <br />
+    <div class="contenedor-padreReferencias" v-if="referencias">
+        <button type="button" class="btn-close" v-on:click="cerrarReferencias()" aria-label="Close"></button>
+        <div class="contenedor-referencias">
+            <div class="estado-completado"></div><span>Completado</span>
+        </div>
+        <div class="contenedor-referencias">
+            <div class="estado-en-espera"></div><span>En espera</span>
+        </div>
+
+        
+    </div>
+    <br />
+    
+    <div class="filtro-container">
+        <select v-model="filtroSeleccionado" id="selectFiltro" class="form-select">
+            <option value="" selected>Sin filtro</option>
+            <option value="En espera">En espera</option>
+            <option value="Completado">Completado</option>
+        </select>
+        <button class="btn btn-outline-secondary btn-sm" v-on:click="FiltrarEst()">Filtrar</button>
+    </div>
+
+
+    <br /> <br />
+    <table class="table">
+        <thead class="encTabla">
+            <tr>
+                <th scope="col">Estado</th>
+                <th scope="col">N° Turno</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Hora</th>
+                <th scope="col">Operaciones</th>
+            </tr>
+        </thead>
+        <tbody class="bodyTabla">
+            <tr v-for="turno in turnosFiltrados" :key="turno.idturno">
+                <td>
+                    <div :id="'EstadoTurno_' + turno.idturno" :class="{'estado-en-espera': turno.estado === 'En espera', 'estado-completado': turno.estado !== 'En espera'}"></div>
+                </td>
+                <td>{{ turno.idturno }}</td>
+                <td>{{ turno.nombreCliente }}</td>
+                <td>{{ turno.apellidoCliente }}</td>
+                <td>{{ turno.fecha }}</td>
+                <td>{{ turno.hora }}</td>
+                <td>
+                    <button class="btn btn-outline-success btn-sm" v-on:click="EstadoTurnoCompletado(turno.idturno)">Marcar Completado</button>
+                    <button class="btn btn-outline-warning btn-sm" v-on:click="EstadoTurnoEspera(turno.idturno)">Marcar En Espera</button>
+                    <button class="btn btn-outline-info btn-sm" v-on:click="AbrirModalCargarServicio(turno.idturno)">Cargar Servicio</button>
+                    <button class="btn btn-outline-primary btn-sm" v-on:click="DetallesTurno(turno.idturno)">Ver detalles</button>
+                    <button class="btn btn-outline-danger btn-sm" v-on:click="AnularTurno(turno.idturno)">Anular</button>
+                </td>
+            </tr>
+        </tbody>
+
+
+    </table>
+
+    <!-- Modal para agregar turno -->
+    <div class="modal-background" v-if="modalNuevoTurno">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Nuevo Turno</h1>
+                <button type="button" class="btn-close" v-on:click="CerrarModalNuevoTurno()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario para agregar turno -->
+                @* Grupo cliente *@
+                <div class="mb-3 row">
+                    <label for="Cliente" class="col-sm-2 col-form-label">Cliente</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control" id="Cliente" ref="clienteInput" v-model="turnoNuevo.Cliente" v-on:keyup.enter="buscarCliente" required placeholder="Ingresar codigo del cliente">
+                    </div>
+                </div>
+                @* Grupo Nombre *@
+                <div class="mb-3 row">
+                    <label for="Apellido" class="col-sm-2 col-form-label">Nombre</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="Apellido" v-model="turnoNuevo.Nombre" required disabled>
+                    </div>
+                </div>
+                @* Grupo Apellido *@
+                <div class="mb-3 row">
+                    <label for="Apellido" class="col-sm-2 col-form-label">Apellido</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="Apellido" v-model="turnoNuevo.Apellido" required disabled>
+                    </div>
+                </div>
+                @* Grupo servicio *@
+                <div class="mb-3 row">
+                    <label for="Servicio" class="col-sm-2 col-form-label">Servicio</label>
+                    <div class="col-sm-6">
+                        <select class="form-select"class="form-select" id="Servicio" name="Servicio" v-model="turnoNuevo.Servicio" required>
+                            <option selected value="">Seleccionar Servicio</option>
+                            @foreach (var servicio in listaServicios)
+                            {
+                                <option value="@servicio.IDServicio">@servicio.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                @* Grupo Fecha *@
+                <div class="mb-3 row">
+                    <label for="Fecha" class="col-sm-2 col-form-label">Fecha</label>
+                    <div class="col-sm-6">
+                        <input type="date" class="form-control" id="Fecha" v-model="turnoNuevo.Fecha" required>
+                    </div>
+                </div>
+                @* Grupo Hora *@
+                <div class="mb-3 row">
+                    <label for="Hora" class="col-sm-2 col-form-label">Hora</label>
+                    <div class="col-sm-6">
+                        <input type="time" class="form-control" id="Hora" v-model="turnoNuevo.Hora" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" v-on:click="CerrarModalNuevoTurno()" class="btn btn-secondary">Cancelar</button>
+                <button type="button" v-on:click="GuardarModalNuevoTurno()" class="btn btn-success">Grabar</button>
+            </div>
+        </div>
+    </div>
+    @* modal detalles del turno *@
+    <div class="modal-background" v-if="modalDetallesTurno">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Detalles del Turno</h1>
+                <button type="button" class="btn-close" v-on:click="CerrarModalDetallesTurno()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead class="encTabla">
+                        <tr>
+                            <th scope="col">Servicio</th>
+                            <th scope="col">Tiempo estimado</th>
+                            <th scope="col">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bodyTabla">
+                        <tr v-for="turno in detallesTurno" :key="turno.idDetalleTurno">
+                            <td>{{ turno.nombre }}</td>
+                            <td>{{ turno.duracionEstimada }} hs</td>
+                            <td>{{ turno.costo }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                <p class="fs-5"><strong>Total a cobrar: {{ sumaCostos }}</strong></p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+    @* modal agregar servicio *@
+    <div class="modal-background" v-if="modalAgregarServicio">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Agregar servicio</h1>
+                <button type="button" class="btn-close" v-on:click="CerrarModalAgregarServicio()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario para agregar servicio -->
+                @* Grupo servicio *@
+                <div class="mb-3 row">
+                    <label for="Servicio" class="col-sm-2 col-form-label">Servicio</label>
+                    <div class="col-sm-6">
+                        <select class="form-select" id="Servicio" name="Servicio" v-model="idServicioCargaServicio" required>
+                            <option selected value="">Seleccionar Servicio</option>
+                            @foreach (var servicio in listaServicios)
+                            {
+                                <option value="@servicio.IDServicio">@servicio.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" v-on:click="CerrarModalAgregarServicio()" class="btn btn-secondary">Cancelar</button>
+                <button type="button" v-on:click="GrabarNuevoServicio()" class="btn btn-success">Grabar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Referencia al script de Vue -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    var turnosIniciales = @Html.Raw(Json.Serialize(Model));
+    new Vue({
+        el: '#app',
+        data: {
+            referencias: false,
+            cosas: '',
+            modalNuevoTurno: false,
+            modalDetallesTurno: false,
+            modalAgregarServicio: false,
+            detallesTurno: [],
+            turnoNuevo: {
+                Idturno: 0,
+                Cliente: '',
+                Nombre: '',
+                Apellido: '',
+                Servicio: '',
+                Fecha: '',
+                Hora: '',
+                Estado: 'En espera',
+                IdServicio: 0,
+                Importe: 0,
+            },
+            idTurnoCargaServicio: 0,
+            idServicioCargaServicio: 0,
+            totalCobrar: 0,
+
+            Model: turnosIniciales,
+            filtroSeleccionado:'',
+            turnosFiltrados: [],
+        },
+        created() {
+            // Verifica si el filtro está vacío al cargar la página
+            if (this.filtroSeleccionado === '') {
+                this.turnosFiltrados = this.Model;
+            } else {
+                // Filtra la lista de turnos basándose en el estado seleccionado
+                this.turnosFiltrados = this.Model.filter(turno => turno.estado === this.filtroSeleccionado);
+            }
+        },
+        computed: {
+            sumaCostos: function () {
+                return this.detallesTurno.reduce((total, turno) => total + turno.costo, 0);
+            },
+        },
+        methods: {
+            FiltrarEst() {
+                if (this.filtroSeleccionado == '') {
+                    this.turnosFiltrados = this.Model;
+                }
+                else { 
+                this.turnosFiltrados = this.Model.filter(turno => turno.estado === this.filtroSeleccionado);
+                }
+            },
+
+            buscarCliente() {
+                let codigoCliente = this.turnoNuevo.Cliente;
+                fetch('/Turnos/BuscarCliente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(codigoCliente)
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Cliente no encontrado');
+                        }
+                    })
+                    .then(data => {
+                        if (data.length > 0) {
+                            this.turnoNuevo.Cliente = data[0].idcliente;
+                            this.turnoNuevo.Apellido = data[0].apellido;
+                            this.turnoNuevo.Nombre = data[0].nombre;
+                        } else {
+                            alert("Cliente no encontrado");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error.message);
+                    });
+            },
+            EstadoTurnoCompletado(idTurno) {
+                var IDTurno = parseInt(idTurno);
+                fetch('/Turnos/MarcarTurnoCompletado', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(IDTurno),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        window.location.reload();
+                        return response.json();
+                    })
+                    .then(data => {
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            EstadoTurnoEspera(idTurno) {
+                var IDTurno = parseInt(idTurno);
+                fetch('/Turnos/MarcarTurnoEspera', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(IDTurno),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        window.location.reload();
+                        return response.json();
+                    })
+                    .then(data => {
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            AbrirModalNuevoTurno() {
+                this.modalNuevoTurno = true;
+            },
+            CerrarModalNuevoTurno() {
+                this.modalNuevoTurno = false;
+                this.turnoNuevo.Cliente = '';
+                this.turnoNuevo.Nombre = '';
+                this.turnoNuevo.Apellido = '';
+                this.turnoNuevo.Servicio = '';
+                this.turnoNuevo.Fecha = '';
+                this.turnoNuevo.Hora = '';
+                this.turnoNuevo.IdServicio = 0;
+                this.turnoNuevo.Importe = 0;
+            },
+            GuardarModalNuevoTurno() {
+                let horaInput = this.turnoNuevo.Hora;
+                let [horas, minutos] = horaInput.split(':');
+                let horaFormateada = `${horas}:${minutos}:00`;
+
+                let turno = {
+                    Idcliente: this.turnoNuevo.Cliente,
+                    Idservicio: parseInt(this.turnoNuevo.Servicio),
+                    Fecha: this.turnoNuevo.Fecha,
+                    Hora: horaFormateada,
+                    Estado: this.turnoNuevo.Estado,
+                };
+                if (this.turnoNuevo.Nombre == '') {
+                    alert("Se deben agregar los datos del cliente");
+                } else if (this.turnoNuevo.Servicio == '' || this.turnoNuevo.Fecha == '' || this.turnoNuevo.Hora == '') {
+                    alert("Debe completar todos los campos");
+                } else {
+                    axios.post('/Turnos/Crear', turno, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                        .then(response => {
+                            alert("Hecho");
+                            this.modalNuevoTurno = false;
+                            location.reload();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            },
+            AnularTurno(IdTurno) {
+                var IDTurnoParseado = parseInt(IdTurno);
+
+                fetch('/Turnos/ActualizarTurnoComoAnulado', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ Idturno: IDTurnoParseado })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error al anular el turno');
+                        }
+                    })
+                    .then(data => {
+                        window.location.reload();
+                        alert("Anulado");
+                        // Recargar la página actual
+
+
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            DetallesTurno(Idturno) {
+                this.modalDetallesTurno = true;
+                var IDTurno = parseInt(Idturno);
+                fetch('/Turnos/DetallesTurno', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(IDTurno),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        this.detallesTurno = data;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            CerrarModalDetallesTurno() {
+                this.modalDetallesTurno = false;
+            },
+            AbrirModalCargarServicio(Idturno) {
+                var IDTurno = Idturno;
+                this.idTurnoCargaServicio = IDTurno;
+                this.modalAgregarServicio = true;
+            },
+            CerrarModalAgregarServicio() {
+                this.modalAgregarServicio = false;
+            },
+            GrabarNuevoServicio() {
+                IDTurno = this.idTurnoCargaServicio;
+                IDServicio = this.idServicioCargaServicio;
+                const data = {
+                    IDTurno: IDTurno,
+                    IDServicio: IDServicio
+                };
+
+
+                fetch('/Turnos/CargarServicio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        window.location.reload();
+                        return response.json();
+                    })
+                    .then(data => {
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            VerReferencia() {
+                this.referencias = true;
+            },
+            cerrarReferencias() {
+                this.referencias = false;
+            },
+        }
+    });
+</script>
+
+<style scoped>
+    .encTabla {
+        background-color: lightcyan;
+    }
+
+    .modal-content {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 500px;
+    }
+
+    .modal-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    .estado-en-espera {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: yellow;
+        margin-right: 5px;
+    }
+
+    .estado-completado {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: green;
+        margin-right: 5px;
+    }
+
+    .contenedor-referencias {
+        margin: 5px;
+        display: flex;
+        align-items: center;
+    }
+
+    .contenedor-padreReferencias {
+        width: 190px;
+        padding: 10px;
+        border: dashed;
+        border-radius: 5px;
+    }
+
+    #selectFiltro{
+        width: 160px;
+    }
+
+    .filtro-container {
+        display: flex;
+        gap: 10px; 
+    }
+
+</style>
